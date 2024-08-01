@@ -1,6 +1,6 @@
 # Pattern-invariant Unrolling for Robust Demosaicking
 
-This is the code repository for the paper _Pattern-invariant Demosaicking Using a Deep Plug-and-Play Unrolled Algorithm_ submitted at to IEEE Transactions on Computational Imaging (TCI).
+This repository contains the implementation of the DRUID (Demosaicking with Robust UnrollIng Design) demosaicking method, presented in the paper the paper _Pattern-invariant Demosaicking Using a Deep Plug-and-Play Unrolled Algorithm_ submitted at to IEEE Transactions on Computational Imaging (TCI).
 
 ## Overview
 
