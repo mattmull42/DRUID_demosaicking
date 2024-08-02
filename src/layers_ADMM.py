@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-class U_ADMM(nn.Module):
+class DRUID(nn.Module):
     def __init__(self, N: int, nb_channels: int) -> None:
         super().__init__()
 

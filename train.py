@@ -3,7 +3,7 @@ import lightning.pytorch as pl
 from lightning.pytorch.callbacks import ModelCheckpoint, TQDMProgressBar
 from lightning.pytorch.loggers import CSVLogger
 
-from src.lightning_classes import UnrolledSystem
+from src.lightning_classes import DRUIDSystem
 from src.data_loader import RGBDataset
 from src.utils import get_dataloader, set_matmul_precision
 
@@ -31,7 +31,7 @@ val_dataset = RGBDataset(VAL_DIR, CFAS, cfa_variants=0)
 val_dataloader = get_dataloader(val_dataset, BATCH_SIZE)
 
 # Initializes the network and its trainer
-model = UnrolledSystem(lr=LEARNING_RATE, N=NB_STAGES, nb_channels=NB_CHANNELS)
+model = DRUIDSystem(lr=LEARNING_RATE, N=NB_STAGES, nb_channels=NB_CHANNELS)
 
 progress_bar = TQDMProgressBar(refresh_rate=500)
 save_best = ModelCheckpoint(filename='best', monitor='Loss/Val', save_last=True)

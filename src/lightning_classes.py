@@ -3,14 +3,14 @@ from torchmetrics.functional.regression import mean_squared_error
 from torchmetrics.functional.image import peak_signal_noise_ratio, structural_similarity_index_measure
 from lightning.pytorch import LightningModule
 
-from src.layers_ADMM import U_ADMM
+from src.layers_ADMM import DRUID
 
 
-class UnrolledSystem(LightningModule):
+class DRUIDSystem(LightningModule):
     def __init__(self, lr: float, N: int, nb_channels: int) -> None:
         super().__init__()
 
-        self.model = U_ADMM(N, nb_channels)
+        self.model = DRUID(N, nb_channels)
         self.lr = lr
 
         self.save_hyperparameters()
