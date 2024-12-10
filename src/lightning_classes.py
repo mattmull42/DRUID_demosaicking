@@ -3,7 +3,7 @@ from torchmetrics.functional.regression import mean_squared_error
 from torchmetrics.functional.image import peak_signal_noise_ratio, structural_similarity_index_measure
 from lightning.pytorch import LightningModule
 
-from methods.DRUID_code.src.DRUID_layers import DRUID
+from src.DRUID_layers import DRUID
 
 
 class DRUIDSystem(LightningModule):
