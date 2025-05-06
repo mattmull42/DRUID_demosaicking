@@ -19,13 +19,13 @@ class DRUID(nn.Module):
         self.data = {}
 
     def setup_operator(self, x: torch.Tensor, mask: torch.Tensor) -> None:
-        self.data['mask'] = mask
+        self.data["mask"] = mask
         ones = torch.ones_like(x)
-        self.data['AAT'] = direct(self.data['mask'], adjoint(self.data['mask'], ones)) / ones
-        self.data['ATy'] = adjoint(self.data['mask'], x)
-        self.data['x'] = self.data['ATy'].clone()
-        self.data['z'] = self.data['ATy'].clone()
-        self.data['beta'] = torch.zeros_like(self.data['x'])
+        self.data["AAT"] = direct(self.data["mask"], adjoint(self.data["mask"], ones)) / ones
+        self.data["ATy"] = adjoint(self.data["mask"], x)
+        self.data["x"] = self.data["ATy"].clone()
+        self.data["z"] = self.data["ATy"].clone()
+        self.data["beta"] = torch.zeros_like(self.data["x"])
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         self.setup_operator(x, mask)
@@ -35,7 +35,7 @@ class DRUID(nn.Module):
             self.data = self.layers[i](self.data)
 
             if i % 3 == 0:
-                res.append(self.data['x'].clone())
+                res.append(self.data["x"].clone())
 
         return torch.stack(res)
 
@@ -47,15 +47,15 @@ class PrimalBlock(nn.Module):
         self.rho = nn.Parameter(torch.tensor(0.1))
 
     def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        res = data['ATy'] + self.rho * (data['z'] - data['beta'])
+        res = data["ATy"] + self.rho * (data["z"] - data["beta"])
 
-        tmp = direct(data['mask'], res)
-        tmp /= (self.rho + data['AAT'])
-        tmp = adjoint(data['mask'], tmp)
+        tmp = direct(data["mask"], res)
+        tmp /= self.rho + data["AAT"]
+        tmp = adjoint(data["mask"], tmp)
 
         res -= tmp
         res /= self.rho
-        data['x'] = res
+        data["x"] = res
 
         return data
 
@@ -67,7 +67,7 @@ class MultiplierBlock(nn.Module):
         self.eta = nn.Parameter(torch.tensor(0.1))
 
     def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        data['beta'] = data['beta'] + self.eta * (data['x'] - data['z'])
+        data["beta"] = data["beta"] + self.eta * (data["x"] - data["z"])
 
         return data
 
@@ -86,7 +86,7 @@ class AuxiliaryBlock(nn.Module):
         self.outc = DoubleConv(nb_channels, C)
 
     def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        res = (data['x'] + data['beta'])
+        res = data["x"] + data["beta"]
         x1 = self.inc(res)
         x2 = self.down1(x1)
         x3 = self.down2(x2)
@@ -97,13 +97,13 @@ class AuxiliaryBlock(nn.Module):
         res = self.up3(res, x1)
         res = self.outc(res)
 
-        data['z'] += res
+        data["z"] += res
 
         return data
 
 
 class DoubleConv(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, mid_channels: int=0) -> None:
+    def __init__(self, in_channels: int, out_channels: int, mid_channels: int = 0) -> None:
         super().__init__()
 
         if mid_channels == 0:
@@ -115,7 +115,7 @@ class DoubleConv(nn.Module):
             nn.LeakyReLU(inplace=True),
             nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.LeakyReLU(inplace=True)
+            nn.LeakyReLU(inplace=True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -136,7 +136,7 @@ class Up(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
 
-        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         self.conv = DoubleConv(in_channels, out_channels, in_channels // 2)
 
     def forward(self, x1: torch.Tensor, x2: torch.Tensor) -> torch.Tensor:
@@ -145,8 +145,9 @@ class Up(nn.Module):
         diffY = x2.size()[2] - x1.size()[2]
         diffX = x2.size()[3] - x1.size()[3]
 
-        x1 = nn.functional.pad(x1, [diffX // 2, diffX - diffX // 2,
-                                    diffY // 2, diffY - diffY // 2])
+        x1 = nn.functional.pad(
+            x1, [diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2]
+        )
         x = torch.cat([x2, x1], dim=1)
 
         return self.conv(x)

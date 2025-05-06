@@ -1,44 +1,47 @@
 from pathlib import Path
+
 import torch
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 
-from src.forward_model.cfa_operator import cfa_operator
+import src.cfa_patterns as cfa_patterns
 from src.utils import get_variants
 
 
-def data_loader_rgb(input_dir: Path,
-                    patch_size: int=0, stride: int=0
-                    ) -> torch.Tensor:
-
+def data_loader_rgb(input_dir: Path, patch_size: int = 0, stride: int = 0) -> torch.Tensor:
     if input_dir.is_file():
         res = torch.stack([read_image(input_dir) / 255])
 
     else:
-        res = torch.stack([read_image(image_path) / 255
-                           for image_path in input_dir.iterdir()])
+        res = torch.stack([read_image(image_path) / 255 for image_path in input_dir.iterdir()])
 
     if patch_size == 0:
         return res
 
-    return (res.unfold(2, patch_size, stride)
-               .unfold(3, patch_size, stride)
-               .permute(2, 3, 0, 1, 4, 5)
-               .reshape(-1, res.shape[1], patch_size, patch_size))
+    return (
+        res.unfold(2, patch_size, stride)
+        .unfold(3, patch_size, stride)
+        .permute(2, 3, 0, 1, 4, 5)
+        .reshape(-1, res.shape[1], patch_size, patch_size)
+    )
 
 
 class RGBDataset(Dataset):
-    def __init__(self, images_dir: Path, cfas: list[str], cfa_variants: int=0,
-                 patch_size: int=0, stride: int=0
-                 ) -> None:
-
+    def __init__(
+        self,
+        images_dir: Path,
+        cfas: list[str],
+        cfa_variants: int = 0,
+        patch_size: int = 0,
+        stride: int = 0,
+    ) -> None:
         self.cfas = []
         self.cfa_idx = []
         self.gts = data_loader_rgb(images_dir, patch_size, stride)
 
         for i, cfa in enumerate(cfas):
-            pattern = cfa_operator(cfa, (*self.gts[0].shape[1:], self.gts[0].shape[0])).pattern
-            variants = get_variants(pattern.permute(2, 0, 1), self.gts[0].shape, depth=cfa_variants)
+            pattern = getattr(cfa_patterns, f"get_{cfa}_pattern")().permute(2, 0, 1)
+            variants = get_variants(pattern, self.gts[0].shape, depth=cfa_variants)
             self.cfas += variants
             self.cfa_idx += [i] * len(variants)
 
